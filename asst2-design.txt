@@ -1,10 +1,62 @@
-Add your design document in here.
+----------------------------------------------------------------------------------------------------------------------------------
+MAIN IDEAS FROM LECTURES: MAIN IDEAS FROM LECTURES: MAIN IDEAS FROM LECTURES: MAIN IDEAS FROM LECTURES: MAIN IDEAS FROM LECTURES:
+----------------------------------------------------------------------------------------------------------------------------------
+aight so basically: 
 
-Just config stuff and checking git
+user : wants to do stuff to a file - 
+       read write open close seek whatever but doesnt care abot file type/where it is.
 
-made new branch
+FileSystem FS: this bad boy actually knows whats going on and is the system that will actually do stuff on the disk
+               however, there are multiple file systems on a computer which have different ways to access/manipulate them
+
+Virtual_FS   : Think like java class, this the overall class that ALL filesystems refer to and has the general "functions"
+               to do stuff like read/write whatever. It knows how the file systems underneith work and has a specific set of instructions
+               that we use so we dont have to care about the multiple systems bellow. 
+      ***      Has a Vnode struct for the file inodes - this is for functions like open close read write
+               Has a vfs for the other file systems to know how to use the system 
+
+Thus all we need to know is how to talk to the VFS and it does the rest
+
+So when we do stuff like fd = open("file") --> the vfs interface realy goes down the levels to do vnode = vfs_open("file")
+    this way we dont have to care about dofferent file types and locations, out program can just do it
+
+    ie, read(fd)  --> vop_read(file, uio)   NOTE this uio is like offset
 
 
-final git check
+fd (file descriptor (array)): every open file has a file descriptor and we use it is read/seek... to know which file to read... from 
+    there is a state in the file descriptor, so like if u read byte-byte, it knows where ure at. state also knows modes
 
-yeet
+
+OF (Open files array): This is basically an array of open files. Each fd is just an index in the array (1,2,3,4,5,6)
+
+Concurrency is always annoying but verry usefull and screws with this. 
+You dont want one file descriptor updating the OF table then another FD that refers to that OF entry being changed unexpectedly
+(or you might want that, wow !)
+
+Bassically to ensure you get what you want, u want ure own local fd-arrays in each proccess and a global OF(table). 
+    this way, different proccesses can have there own entry in the OF_table and can do there own stuff without other proccesses interfeering
+
+So we wana make a static FD array for each process. 
+These will refer to things in a global OF array. (can just make static size)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+FROM ASSIGNMENT LECTURE FROM ASSIGNMENT LECTURE FROM ASSIGNMENT LECTURE FROM ASSIGNMENT LECTURE FROM ASSIGNMENT LECTURE FROM ASSIGNMENT LECTURE 
+---------------------------------------------------------------------------------------------------------------------------------------------------
+we wana impliment open(), read(), write(), lseek(), close(), dup2()  NOTE NOTE we should assume things can fork
+    -basically the system library in the application code will call these. They perform a syscall to the OS and we 
+        code in the OS what these should do and then return
+
+VFS and sysCall doer thing already exests, we just have to put the right system calls in for different opperations
+
+taking request from syscall
+keeping track of FD table and OF table
+Invoking VFS (which is written but we gota use the write interface)
+
+This is all in the OS/161 Kernel
+
+WHAT WE CARE about
+
+open()/close() -- need to keep track of file descriptors and flags (how it was opened / read only/write) 
+
+read()/write() -- we arleady got the file descriptor. CARE if you got 2 file descriptors and write to them, can override stuff. -> OF global
+                  need to keep track of file pointers PER OPEN
