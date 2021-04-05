@@ -1,4 +1,4 @@
-/*
+/*1
  * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
  *	The President and Fellows of Harvard College.
  *
@@ -44,6 +44,7 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <file.h>
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -58,6 +59,8 @@ runprogram(char *progname)
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
+
+	
 
 	/* Open the file. */
 	result = vfs_open(progname, O_RDONLY, 0, &v);
@@ -96,7 +99,31 @@ runprogram(char *progname)
 		/* p_addrspace will go away when curproc is destroyed */
 		return result;
 	}
+	
+	
+	//need table 1 and 2 to be stdout stderr
+	//ASS2 commonly asked questions gives us this
+	char c1[] = "con:";
+	char c2[] = "con:";
 
+	struct vnode *stdout;
+	struct vnode *stderr;
+
+	result = vfs_open(c1, O_WRONLY, 0, &stdout); 
+	result = vfs_open(c2, O_WRONLY, 0, &stderr);
+	
+
+	/* Update the current process opened file table*/
+	FP *fp1 = newFP(O_WRONLY);
+	OP *op1 = newOP(fp1, stdout);
+
+	FP *fp2 = newFP(O_WRONLY);
+	OP *op2 = newOP(fp2, stderr);
+	
+	curproc->FileTable[1] = op1; 
+	curproc->FileTable[2] = op2; 
+	
+	
 	/* Warp to user mode. */
 	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
 			  NULL /*userspace addr of environment*/,

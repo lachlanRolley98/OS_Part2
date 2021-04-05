@@ -35,6 +35,9 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
+#include <file.h>
+#include <copyinout.h>
+#include <endian.h> // this holds head for 64-32 stuff
 
 
 /*
@@ -88,6 +91,10 @@ syscall(struct trapframe *tf)
 
 	callno = tf->tf_v0;
 
+	uint64_t offset;    //need this shit for lseek
+	int whence;         //needs to be on stack too so heres sweet
+	off_t retval64;		//yeet
+
 	/*
 	 * Initialize retval to 0. Many of the system calls don't
 	 * really return a value, just 0 for success and -1 on
@@ -108,6 +115,110 @@ syscall(struct trapframe *tf)
 		err = sys___time((userptr_t)tf->tf_a0,
 				 (userptr_t)tf->tf_a1);
 		break;
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		//Basically we are always wantting a err num and return val
+		//ret is basically what u want the syscall to return and goes in a1 at the end
+		//err tells the syscall if this is a error or good
+
+		//NOTE We are inverting returns if they are errors
+		// errors like ENODEV are usually possitive
+		// fd are always possitive
+		//to differentiate, we invert erros before we return them from sys_open then we can see if it was an error or fd number
+		
+		//Chuck everything importaint from the trap frame into sys_open and get the retval
+		//if retval isnt 0 from sys open we got an error so pass that error back
+		case SYS_open:
+		//this retval is the fd index taht we pass back to v0
+			retval = sys_open((const char *)tf->tf_a0, tf->tf_a1, (mode_t)tf->tf_a2); // needs to be (const char *)filename slide 14 assignment lecture
+			
+			//good returns are 0, bad returns are usually things like -1
+			if (retval < 0) { 
+				err = -retval;
+			} else {
+				err = 0;    // didnt have a problem so error is 0
+			}
+		break;
+
+
+
+
+
+
+
+		// the return for this will be 0 (good)or just the error number
+		//just close file (explination on the function) 
+		case SYS_close:
+			err = sys_close(tf->tf_a0);
+		break;
+
+
+
+
+
+
+
+		case SYS_dup2:
+			retval = sys_dup2(tf->tf_a0, tf->tf_a1);
+			if (retval < 0) {
+				err = -retval;
+			} else {
+				err = 0;
+			}		
+		break;
+
+
+
+
+
+
+		//Write this asap so we can understand the asst2 output
+		case SYS_write:
+			retval = sys_write(tf->tf_a0, (const void*)tf->tf_a1, (size_t)tf->tf_a2);
+			if (retval < 0) {
+				err = -retval;
+			} else {
+				err = 0;
+			}		
+		break;
+
+
+
+
+
+
+		///normal read
+		case SYS_read:
+			retval = sys_read(tf->tf_a0, (void*)tf->tf_a1, (size_t)tf->tf_a2);
+			if (retval < 0) {
+				err = -retval;
+			} else {
+				err = 0;
+			}		
+		break;
+
+
+
+		
+
+		
+
+		//seekyboy
+		case SYS_lseek:
+			join32to64(tf->tf_a2, tf->tf_a3, &offset);
+			copyin((userptr_t)tf->tf_sp + 16, &whence, sizeof(int));
+			retval64 = sys_lseek(tf->tf_a0, offset, whence);
+			split64to32(retval64, &tf->tf_v1, (uint32_t*)&retval);
+			if (retval64 < 0) {
+				err = -retval;
+			} else {
+				err = 0;
+			}		
+		break;
+
+
+
 
         case SYS__exit:
                 kprintf("exit() was called, but it's unimplemented.\n");

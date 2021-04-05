@@ -1,4 +1,4 @@
-/*
+/* 1
  * Declarations for file handle and file table management.
  */
 
@@ -10,10 +10,7 @@
  */
 #include <limits.h>
 
-
-/*
- * Put your function declarations and data types here ...
- */
+//all stuff in syscall.h
 
 
 

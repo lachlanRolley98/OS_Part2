@@ -20,7 +20,7 @@ Thus all we need to know is how to talk to the VFS and it does the rest
 So when we do stuff like fd = open("file") --> the vfs interface realy goes down the levels to do vnode = vfs_open("file")
     this way we dont have to care about dofferent file types and locations, out program can just do it
 
-    ie, read(fd)  --> vop_read(file, uio)   NOTE this uio is like offset
+    ie, read(fd)  --> vop_read(file, uio)   NOTE this uio is a struct with info like offset and stuff
 
 
 fd (file descriptor (array)): every open file has a file descriptor and we use it is read/seek... to know which file to read... from 
@@ -57,6 +57,7 @@ This is all in the OS/161 Kernel
 WHAT WE CARE about
 
 open()/close() -- need to keep track of file descriptors and flags (how it was opened / read only/write) - chuck mode to vfs aswell and let it deal with it
+                  each open should make a new file descriptor, even if its the same file
 
 read()/write() -- we arleady got the file descriptor. CARE if you got 2 file descriptors and write to them, can override stuff. -> OF global
                   need to keep track of file pointers PER OPEN
@@ -77,4 +78,20 @@ HOW TO BE THE LINK BETWEEN OS AND PROGRAMS   HOW TO BE THE LINK BETWEEN OS AND P
 How syscall works on registers: before op u need to put sysNumber in v0 and args in a0,a1,a2 but this is already set up.
                                 On way out, We need to set the appropriate resisters 
  
-Not sure if we actually need too put stuff in the registers before syscall or what                                  
+Not sure if we actually need too put stuff in the registers before syscall or what      
+
+
+
+
+
+main files we care about
+
+
+userl/testb/asst2/asst2.c                This is the guy that gets run to test stuff
+kern/incl/kern/syscall.h                  Importatin syscall numbers
+kern/arch.mips/syscall/syscall.c         this is the thing that handles all syscalls. Put each syscall in the case
+kern/main/main.c                         example of how to handle a syscall
+kern/vm/copyinout.c                      this is acctually how we move data from program to kernel (need for read and write)
+kern/lib/uio.c                           not a clue tbh, have a geeze at the header file later (kern/include/uio.h)
+kern/syscall/runprogram                  this where we gota set up the fd array for 0,1,2 with the in out err stuff
+kern/vm/copyinout                        use copyinstr for open and copyoutstr for read so we just make sure our buffer size/location is correct

@@ -27,16 +27,20 @@
  * SUCH DAMAGE.
  */
 
+#include <file.h>
+#include <syscall.h>
+
 #ifndef _PROC_H_
 #define _PROC_H_
 
 /*
  * Definition of a process.
- *
+ * 
  * Note: curproc is defined by <current.h>.
  */
 
 #include <spinlock.h>
+
 
 struct addrspace;
 struct thread;
@@ -70,7 +74,12 @@ struct proc {
 	/* VFS */
 	struct vnode *p_cwd;		/* current working directory */
 
-	/* add more material here as needed */
+	//here we got this now per process
+	OP *FileTable[OPEN_MAX];
+
+
+
+
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */

@@ -44,7 +44,8 @@ void syscall(struct trapframe *tf);
  * Support functions.
  */
 
-/* Helper for fork(). You write this. */
+/* Helper for fork(). You write this. */   //do this after everything done, then we add concurrency stuff. basically just add semaphores to the fP and OP 
+//and use them in crit regions where things are incremented like fp pos or reference numbers in OP
 void enter_forked_process(struct trapframe *tf);
 
 /* Enter user mode. Does not return. */
@@ -58,5 +59,60 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////            MAKE FP and OP FUNCTIONS AND EDIT THEM                    /////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+//this is a file pointer. Just rope copied off some guy on gitlab
+//the importaint thing is pos for the offset and flag
+
+//when we do the concurrency stuff, gota chuck a semaphore in here too but can add later
+typedef struct filePointer{
+    unsigned int     read;         
+    unsigned int     write;   
+    off_t            pos;           
+} FP;
+
+
+//This openfile structure just got off gitlab too
+//needs to hold the file pointer aswell as a vnote pointer
+//needs ref count
+//need to put semaphore in later when doing concurrency
+
+typedef struct openfile {
+    FP               *fp;          
+    int              ref_count;    
+    struct vnode     *vnode;       
+} OP;
+
+
+// headers for stuff in file.c
+FP *newFP(int flag);
+OP *newOP(FP *fp, struct vnode *vnode);
+
+void freeFP(FP *fp);
+void freeOP(OP *op);
+
+void upRef(OP *op);
+int  downRef(OP *op);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////      ALL OUR SYS_@@@@@ STUFF     //////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//all the shit we are making in file.c
+int sys_open(const char *filename, int flags, mode_t mode); 
+int sys_close(int fd);
+int sys_dup2(int oldfd, int newfd);
+ssize_t sys_write(int fd, const void *buf, size_t nbytes);
+ssize_t sys_read(int fd, void *buf, size_t buflen);
+off_t sys_lseek(int fd, off_t pos, int whence); //whence is where you start
+
+
+
+
 
 #endif /* _SYSCALL_H_ */

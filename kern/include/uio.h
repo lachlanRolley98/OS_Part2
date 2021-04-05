@@ -80,6 +80,7 @@ struct uio {
 	struct addrspace *uio_space;	/* Address space for user pointer */
 };
 
+size_t getRemaining(struct uio *u);	  
 
 /*
  * Copy data from a kernel buffer to a data region defined by a uio struct,
@@ -137,6 +138,16 @@ int uiomovezeros(size_t len, struct uio *uio);
  */
 void uio_kinit(struct iovec *, struct uio *,
 	       void *kbuf, size_t len, off_t pos, enum uio_rw rw);
+
+
+
+
+
+void
+uio_uinit(struct iovec *iov, struct uio *u,
+	  void *ubuf, size_t len, off_t pos, enum uio_rw rw);
+
+
 
 
 #endif /* _UIO_H_ */
